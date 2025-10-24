@@ -1,0 +1,28 @@
+{
+  "name": "icc-cadastro",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "next": "14.2.5",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "@supabase/supabase-js": "^2.45.0",
+    "react-hook-form": "^7.51.5",
+    "@hookform/resolvers": "^3.9.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.4",
+    "@types/node": "^20.12.12",
+    "@types/react": "^18.2.73",
+    "@types/react-dom": "^18.2.23",
+    "eslint": "^8.57.0",
+    "eslint-config-next": "14.2.5"
+  }
+}
