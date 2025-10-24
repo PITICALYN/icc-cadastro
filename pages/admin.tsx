@@ -34,10 +34,15 @@ export default function AdminPage() {
       if (status !== 'all') params.set('status', status);
 
       const res = await fetch('/api/admin/registrations?' + params.toString(), {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
+        cache: 'no-store'
       });
-      const data = await res.json();
-      if (data.error) throw new Error(data.error);
+
+      const text = await res.text();
+      let data: any = {};
+      try { data = text ? JSON.parse(text) : {}; } catch { throw new Error(\`Resposta inválida da API (\${res.status})\`); }
+      if (!res.ok) throw new Error(data.error || \`Erro \${res.status}\`);
+
       setRows(data.rows || []);
     } catch (e: any) {
       setMsg(e.message || 'Erro ao carregar');
@@ -52,13 +57,18 @@ export default function AdminPage() {
       setLoading(true); setMsg(null);
       const token = await getToken();
       if (!token) { setMsg('Sem token'); return; }
+
       const res = await fetch('/api/admin/update-registration', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ id, status: newStatus })
+        body: JSON.stringify({ id, status: newStatus }),
+        cache: 'no-store'
       });
-      const data = await res.json();
-      if (data.error) throw new Error(data.error);
+
+      const text = await res.text();
+      const data = text ? JSON.parse(text) : {};
+      if (!res.ok) throw new Error(data.error || \`Erro \${res.status}\`);
+
       await load();
     } catch (e: any) {
       setMsg(e.message || 'Erro ao atualizar');
@@ -67,7 +77,7 @@ export default function AdminPage() {
     }
   }
 
-  useEffect(() => { load(); }, []); 
+  useEffect(() => { load(); }, []);
 
   const filtered = useMemo(() => rows, [rows]);
 

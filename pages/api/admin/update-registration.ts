@@ -1,4 +1,4 @@
-// pages/api/admin/registrations.ts
+// pages/api/admin/update-registration.ts
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { createClient } from '@supabase/supabase-js';
 
@@ -24,19 +24,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
   try {
     await assertIsAdmin(req);
+    if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-    const { status = 'all', q = '', limit = '100' } = req.query as Record<string,string>;
-    let query = admin.from('registrations')
-      .select('id, user_id, document_number, birth_date, status, created_at, extra')
-      .order('created_at', { ascending: false })
-      .limit(parseInt(limit || '100'));
+    const { id, status } = req.body || {};
+    if (!id || !['approved','rejected','pending'].includes(status)) {
+      return res.status(400).json({ error: 'invalid payload' });
+    }
 
-    if (status !== 'all') query = query.eq('status', status);
-    if (q) query = query.ilike('document_number', `%${q}%`);
-
-    const { data, error } = await query;
+    const { error } = await admin.from('registrations').update({ status }).eq('id', id);
     if (error) return res.status(400).json({ error: error.message });
-    return res.status(200).json({ rows: data });
+
+    return res.status(200).json({ ok: true });
   } catch (e: any) {
     const msg = e?.message || 'error';
     const code = msg === 'forbidden' ? 403 : (msg === 'missing token' || msg === 'invalid token') ? 401 : 500;
