@@ -21,7 +21,11 @@ async function assertIsAdmin(req: NextApiRequest) {
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+  res.setHeader('CDN-Cache-Control', 'no-store');
+  res.setHeader('Vercel-CDN-Cache-Control', 'no-store');
+
   try {
     await assertIsAdmin(req);
 
@@ -35,11 +39,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (q) query = query.ilike('document_number', `%${q}%`);
 
     const { data, error } = await query;
-    if (error) return res.status(400).json({ error: error.message });
-    return res.status(200).json({ rows: data });
+    if (error) return res.status(400).end(JSON.stringify({ error: error.message }));
+    return res.status(200).end(JSON.stringify({ rows: data }));
   } catch (e: any) {
     const msg = e?.message || 'error';
     const code = msg === 'forbidden' ? 403 : (msg === 'missing token' || msg === 'invalid token') ? 401 : 500;
-    return res.status(code).json({ error: msg });
+    return res.status(code).end(JSON.stringify({ error: msg }));
   }
 }

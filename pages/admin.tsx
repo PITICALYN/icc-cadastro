@@ -23,6 +23,12 @@ export default function AdminPage() {
     return session.data.session?.access_token ?? null;
   }
 
+  async function safeJSON(res: Response) {
+    const t = await res.text();
+    if (!t) return {};
+    try { return JSON.parse(t); } catch { return {}; }
+  }
+
   async function load() {
     try {
       setLoading(true); setMsg(null);
@@ -32,16 +38,19 @@ export default function AdminPage() {
       const params = new URLSearchParams();
       if (q) params.set('q', q);
       if (status !== 'all') params.set('status', status);
+      params.set('_ts', String(Date.now())); // bust cache
 
       const res = await fetch('/api/admin/registrations?' + params.toString(), {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Cache-Control': 'no-cache',
+          Pragma: 'no-cache'
+        },
         cache: 'no-store'
       });
 
-      const text = await res.text();
-      let data: any = {};
-      try { data = text ? JSON.parse(text) : {}; } catch { throw new Error(\`Resposta inválida da API (\${res.status})\`); }
-      if (!res.ok) throw new Error(data.error || \`Erro \${res.status}\`);
+      const data: any = await safeJSON(res);
+      if (!res.ok) throw new Error(data?.error || `Erro ${res.status}`);
 
       setRows(data.rows || []);
     } catch (e: any) {
@@ -58,16 +67,20 @@ export default function AdminPage() {
       const token = await getToken();
       if (!token) { setMsg('Sem token'); return; }
 
-      const res = await fetch('/api/admin/update-registration', {
+      const res = await fetch('/api/admin/update-registration?_ts=' + Date.now(), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+          'Cache-Control': 'no-cache',
+          Pragma: 'no-cache'
+        },
         body: JSON.stringify({ id, status: newStatus }),
         cache: 'no-store'
       });
 
-      const text = await res.text();
-      const data = text ? JSON.parse(text) : {};
-      if (!res.ok) throw new Error(data.error || \`Erro \${res.status}\`);
+      const data: any = await safeJSON(res);
+      if (!res.ok) throw new Error(data?.error || `Erro ${res.status}`);
 
       await load();
     } catch (e: any) {
@@ -78,7 +91,6 @@ export default function AdminPage() {
   }
 
   useEffect(() => { load(); }, []);
-
   const filtered = useMemo(() => rows, [rows]);
 
   return (
